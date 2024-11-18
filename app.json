@@ -41,7 +41,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "API_BASE_URL": "http://sportspot-backend.onrender.com",
+      "API_BASE_URL": "https://sportspot-backend.onrender.com",
       "eas": {
         "projectId": "294a2e27-25c5-49c9-bc2e-1b84e1c150c0"
       }
