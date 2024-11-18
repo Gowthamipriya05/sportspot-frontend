@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, Alert, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
-import NavBar from './NavBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL;
 
 interface Product {
     _id: string; // Change it_id to _id for MongoDB compatibility
@@ -40,13 +42,16 @@ const IssueItem: React.FC = () => {
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/products');
+            const response = await axios.get(`${API_BASE_URL}/products`);
+            console.log('Fetched products:', response.data); // Check fetched data
             setAllProducts(response.data);
             setFilteredProducts(response.data);
         } catch (error) {
-            console.error(error);
+            console.error('Fetch Error:', error.message);
+            Alert.alert('Error', 'Failed to fetch products. Please check your network connection.');
         }
     };
+    
 
     const searchProducts = () => {
         if (!searchQuery.trim()) {
@@ -66,33 +71,31 @@ const IssueItem: React.FC = () => {
 
     return (
         <View style={styles.container}>
-            <NavBar email={email} />
-            <ScrollView style={{ marginTop: 10 }}>
-                <View style={styles.searchContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Search Product"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                    <TouchableOpacity style={styles.searchButton} onPress={searchProducts}>
-                        <Text style={styles.searchButtonText}>Search</Text>
-                    </TouchableOpacity>
-                </View>
-                <FlatList
-                    data={filteredProducts}
-                    keyExtractor={(item) => item._id} // Use _id as the key
-                    renderItem={({ item }) => (
-                        <View style={styles.itemContainer}>
-                            <Text style={styles.title}>{item.it_name}</Text>
-                            <Text>Quantity: {item.it_quantity}</Text>
-                            <TouchableOpacity style={styles.issueButton} onPress={() => navigateToQuantityPage(item)}>
-                                <Text style={styles.issueButtonText}>Issue</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+            <View style={styles.searchContainer}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Search Product"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholderTextColor="#999"
                 />
-            </ScrollView>
+                <TouchableOpacity style={styles.searchButton} onPress={searchProducts}>
+                    <Text style={styles.searchButtonText}>Search</Text>
+                </TouchableOpacity>
+            </View>
+            <FlatList
+                data={filteredProducts}
+                keyExtractor={(item) => item._id} // Use _id as the key
+                renderItem={({ item }) => (
+                    <View style={styles.itemContainer}>
+                        <Text style={styles.title}>{item.it_name}</Text>
+                        <Text style={styles.title}>Quantity: {item.it_quantity}</Text>
+                        <TouchableOpacity style={styles.issueButton} onPress={() => navigateToQuantityPage(item)}>
+                            <Text style={styles.issueButtonText}>Issue</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            />
         </View>
     );
 };
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     searchButton: {
-        backgroundColor: '#02ccfe',
+        backgroundColor: '#00416a',
         padding: 10,
         borderRadius: 5,
     },
@@ -132,6 +135,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: 'bold',
+        color:'gray',
     },
     issueButton: {
         backgroundColor: '#1D3D47',

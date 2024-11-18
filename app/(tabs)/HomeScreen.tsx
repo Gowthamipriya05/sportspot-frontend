@@ -21,6 +21,7 @@ export default function HomeScreen() {
         <View style={styles.buttonStyle}>
           <Button
             title="Login"
+            color='#00416a'
             onPress={() => navigation.navigate('Login')}
           />
         </View>

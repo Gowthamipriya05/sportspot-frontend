@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import axios from 'axios';
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL;
 
 interface IssuedItem {
   _id: string; // Assuming you're using MongoDB's default ID
@@ -9,6 +12,8 @@ interface IssuedItem {
   it_name: string;
   it_quantity: number;
   issue_date: string;
+  return_date:string;
+  it_status:string;
 }
 
 export default function ItemsIssuedScreen() {
@@ -21,7 +26,7 @@ export default function ItemsIssuedScreen() {
 
   const fetchIssuedItems = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/items-issued');
+      const response = await axios.get(`${API_BASE_URL}/items-issued`);
       setIssuedItems(response.data);
     } catch (error) {
       console.error('Error fetching issued items:', error);
@@ -38,6 +43,8 @@ export default function ItemsIssuedScreen() {
       <Text style={styles.headerText}>Item Name</Text>
       <Text style={styles.headerText}>Quantity</Text>
       <Text style={styles.headerText}>Issue Date</Text>
+      <Text style={styles.headerText}>Return Date</Text>
+      <Text style={styles.headerText}>Status</Text>
     </View>
   );
 
@@ -49,6 +56,8 @@ export default function ItemsIssuedScreen() {
       <Text style={styles.cell}>{item.it_name}</Text>
       <Text style={styles.cell}>{item.it_quantity}</Text>
       <Text style={styles.cell}>{new Date(item.issue_date).toLocaleDateString()}</Text>
+      <Text style={styles.cell}>{new Date(item.return_date).toLocaleDateString()}</Text>
+      <Text style={styles.cell}>{item.it_status ? "not returned" : "returned"}</Text>
     </View>
   );
 

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import axios from 'axios';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL;
 
 interface ResetPasswordRouteParams {
   email: string;
@@ -42,7 +45,7 @@ const ResetPasswordScreen: React.FC = () => {
     }
 
     try {
-      const response = await axios.put('http://localhost:3000/reset-password', { email, newPassword });
+      const response = await axios.put(`${API_BASE_URL}/reset-password`, { email, newPassword });
       if (response.data.message === 'Password updated successfully') {
         Alert.alert('Success', 'Password updated successfully.');
         navigation.navigate('Login');
@@ -86,10 +89,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   label: {
+    color:'gray',
     fontSize: 16,
     marginVertical: 5,
   },
   input: {
+    color:'gray',
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 10,

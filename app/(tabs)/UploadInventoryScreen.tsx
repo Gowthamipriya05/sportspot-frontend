@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Button, Alert, Text, StyleSheet } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import Papa from 'papaparse';
+import { NetworkInfo } from 'react-native-network-info';
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL;
 
 const UploadInventoryScreen = () => {
+  const [ipAddress, setIpAddress] = useState('');
+
+  useEffect(() => {
+    // Fetch the IP address when the component mounts
+    NetworkInfo.getIPAddress().then(ip => {
+      setIpAddress(ip);
+    });
+  }, []);
+
   // Function to read and parse the CSV
   const readAndParseCSV = async (uri: string) => {
     try {
@@ -31,34 +44,26 @@ const UploadInventoryScreen = () => {
   // Function to upload inventory data to the server
   const uploadInventoryData = async (data: any) => {
     try {
-      const response = await fetch('http://localhost:3000/upload-inventory', {
+      const response = await fetch(`${API_BASE_URL}/upload-inventory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
-  
+
       if (!response.ok) {
         const errorMessage = await response.json(); // Fetch the error message
         throw new Error(errorMessage.message || 'Failed to upload inventory data');
       }
-  
-      const result = await response.json(); // Parse the JSON response
-      console.log('data uploaded');
 
-    // Show success message and acknowledgment in a single alert
-      Alert.alert(
-      'Success',
-      'Data uploaded successfully. Your data has been uploaded successfully.'
-    );
-
-    } catch (error:any) {
+      console.log('Data uploaded');
+      Alert.alert('Success', 'Data uploaded successfully.');
+    } catch (error: any) {
       console.error('Error uploading inventory data:', error);
       Alert.alert('Error', error.message || 'Failed to upload inventory data');
     }
   };
-  
 
   const pickDocument = async () => {
     try {
@@ -95,7 +100,7 @@ const UploadInventoryScreen = () => {
         {"\n"}s.no, Item_Name, Quantity
       </Text>
       <View style={styles.buttonContainer}>
-        <Button title="Upload CSV" onPress={pickDocument} />
+        <Button color='#00416a' title="Upload CSV" onPress={pickDocument} />
       </View>
     </View>
   );
@@ -109,12 +114,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
+    color: 'gray',
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
   },
   instruction: {
     fontSize: 16,
+    color: 'gray',
     textAlign: 'center',
     marginBottom: 20,
   },

@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NavBar from './NavBar';
 
-// Define the route parameters type for MainScreen
+
 type RootStackParamList = {
   MainScreen: { email: string };
 };
@@ -18,22 +17,28 @@ export default function MainScreen() {
   useEffect(() => {
     const fetchUserData = async () => {
       const storedEmail = route.params?.email || await AsyncStorage.getItem('email') || 'default@nitdelhi.ac.in';
-      const storedDesignation = await AsyncStorage.getItem('designation') || 'student'; // Get designation
+      const storedDesignation = await AsyncStorage.getItem('designation');
+      
+      // Log retrieved values
+      console.log('Retrieved email:', storedEmail);
+      console.log('Stored designation:', storedDesignation);
+
       setEmail(storedEmail);
-      setDesignation(storedDesignation); // Set designation state
+      setDesignation(storedDesignation || 'student'); // Use default if not found
     };
+
     fetchUserData();
   }, [route.params?.email]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('email');
+    await AsyncStorage.removeItem('designation');
     navigation.navigate('Home'); // Navigate back to HomeScreen on logout
   };
 
   return (
     <View style={styles.container}>
-      <NavBar email={email} />
 
-      {/* Buttons Container */}
       <View style={styles.buttonsContainer}>
         {designation === 'student' ? (
           <>
@@ -49,6 +54,10 @@ export default function MainScreen() {
           <>
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ItemsIssuedScreen')}>
               <Text style={styles.buttonText}>Items Issued by Students</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AnalyseDataScreen')}>
+              <Text style={styles.buttonText}>Analyse Data</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('UploadInventory')}>

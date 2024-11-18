@@ -1,12 +1,19 @@
 {
   "expo": {
-    "name": "login_app",
-    "slug": "login_app",
+    "name": "Login App",
+    "slug": "login-app",
+    "description":"This is an sports App",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+    "packagerOpts": {
+    "hostType": "ip",
+    "urlRandomness": null,
+    "dev": true,
+    "minify": false
+  },
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -16,8 +23,7 @@
       "supportsTablet": true
     },
     "android": {
-      "googleServicesFile": "./android/google-services.json",
-      "package": "com.sportspot",
+      "package": "com.nitdelhi.sportsspot",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -35,9 +41,12 @@
       "typedRoutes": true
     },
     "extra": {
+      "API_BASE_URL": "http://sportspot-backend.onrender.com",
       "eas": {
         "projectId": "294a2e27-25c5-49c9-bc2e-1b84e1c150c0"
       }
     }
   }
 }
+
+

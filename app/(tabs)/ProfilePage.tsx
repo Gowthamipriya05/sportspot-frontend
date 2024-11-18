@@ -3,12 +3,16 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL;
 
 export default function ProfilePage() {
   const [name, setName] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [enrollmentNumber, setEnrollmentNumber] = useState<string | null>(null);
   const navigation = useNavigation();
+ 
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -17,7 +21,7 @@ export default function ProfilePage() {
         if (storedEmail) {
           setEmail(storedEmail);
           // Fetch additional user data from the backend using the email
-          const response = await axios.post('http://localhost:3000/get-user', { email: storedEmail });
+          const response = await axios.post(`${API_BASE_URL}/get-user`, { email: storedEmail });
           setName(response.data.name);
           setEnrollmentNumber(response.data.enrollmentNumber);
         } else {

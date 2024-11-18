@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Alert, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Alert, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import CaptchaImage from './CaptchaImage'; // Updated CaptchaImage component
+import CaptchaImage from './CaptchaImage';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import * as Network from 'expo-network';
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL;
+
+WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [correctAnswer, setCorrectAnswer] = useState(0);
   const [captchaProblem, setCaptchaProblem] = useState<{ num1: number; num2: number } | null>(null);
-
+  const [userInfo, setUserInfo] = useState(null);
   const navigation = useNavigation();
 
-  // Function to generate a random math problem
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: "309486654714-lj45du3jpfpfb449endmatqmftjol5up.apps.googleusercontent.com",
+  });
+
   const generateMathProblem = () => {
     const num1 = Math.floor(Math.random() * 10);
     const num2 = Math.floor(Math.random() * 10);
@@ -22,7 +36,6 @@ const LoginScreen: React.FC = () => {
     return { num1, num2, answer };
   };
 
-  // Refresh CAPTCHA
   const refreshCaptcha = () => {
     const { num1, num2, answer } = generateMathProblem();
     setCaptchaProblem({ num1, num2 });
@@ -33,34 +46,60 @@ const LoginScreen: React.FC = () => {
     refreshCaptcha();
   }, []);
 
-  // Login function
+  useEffect(() => {
+    if (response?.type === "success") {
+      handleGoogleSignIn(response.authentication.accessToken);
+    }
+  }, [response]);
+
+  const handleGoogleSignIn = async (token) => {
+    if (!token) return;
+    try {
+      const res = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = await res.json();
+      await AsyncStorage.setItem("@user", JSON.stringify(user));
+      setUserInfo(user);
+      navigation.navigate("MainScreen");
+    } catch (error) {
+      Alert.alert("Error", "Failed to log in with Google.");
+    }
+  };
+
   const handleLogin = async () => {
+    console.log('api url', API_BASE_URL);
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in both email and password.');
       return;
     }
-
+  
     if (parseInt(captchaAnswer) !== correctAnswer) {
       Alert.alert('Error', 'CAPTCHA answer is incorrect.');
       return;
     }
-
+  
     try {
-      const response = await axios.post('http://localhost:3000/login', { email, password });
+      const response = await axios.post(`${API_BASE_URL}/login`, { email, password });
+      console.log('Login Response:', response.data); // Log the full response
       if (response.data.message === 'Login successful') {
-        const enrollmentNumber = response.data.enroll_number;
-
-        await AsyncStorage.setItem('enrollmentNumber', enrollmentNumber);
-        await AsyncStorage.setItem('email', email);
-
-        navigation.navigate('MainScreen', { email });
+        const { enroll_number, designation, name } = response.data;
+        await AsyncStorage.multiSet([
+          ['enrollmentNumber', enroll_number],
+          ['email', email],
+          ['designation', designation],
+          ['name', name]
+        ]);
+        navigation.navigate('MainScreen');
       } else {
         Alert.alert('Error', response.data.message);
       }
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Login Error:', error); // Log the full error
       Alert.alert('Error', error.response?.data?.message || 'Login failed.');
     }
   };
+  
 
   return (
     <View style={styles.container}>
@@ -76,20 +115,27 @@ const LoginScreen: React.FC = () => {
           placeholderTextColor="#999"
         />
 
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Enter password"
-          secureTextEntry
-          placeholderTextColor="#999"
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Enter password"
+            secureTextEntry={!showPassword}
+            placeholderTextColor="#999"
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+            <Icon name={showPassword ? 'eye-off' : 'eye'} size={24} color="gray" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.captchaContainer}>
-          <CaptchaImage num1={captchaProblem?.num1 ?? 0} num2={captchaProblem?.num2 ?? 0} />
-          <TouchableOpacity style={styles.refreshButton} onPress={refreshCaptcha}>
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
+          <View style={styles.captchaRow}>
+            <CaptchaImage num1={captchaProblem?.num1 ?? 0} num2={captchaProblem?.num2 ?? 0} />
+            <TouchableOpacity style={styles.refreshButton} onPress={refreshCaptcha}>
+              <Text style={styles.refreshButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Text style={styles.captchaText}>
@@ -109,14 +155,20 @@ const LoginScreen: React.FC = () => {
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('ResetPassword', { email })}>
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </TouchableOpacity>
+        <Text style={styles.or}>Or</Text>
 
-        <View style={styles.footer}>
+        <Button color='#00416a' title="Sign in with Google" onPress={() => promptAsync()} />
+        <Text>{userInfo ? `Logged in as ${userInfo.name}` : ""}</Text>
+
+        <TouchableOpacity onPress={() => navigation.navigate('ResetPasswordScreen', { email })}>
+          <Text style={styles.forgetText}>Forgot Password?</Text>
+        </TouchableOpacity>
+        
+
+        <View style={styles.footerContainer}>
           <Text style={styles.footerText}>Don't have an account?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-            <Text style={styles.signupLink}> Sign Up</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignupScreen')}>
+            <Text style={styles.signUpLink}> Sign Up</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -124,24 +176,28 @@ const LoginScreen: React.FC = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
+  or:{
+    textAlign: 'center',
+    marginBottom:10,
+    fontWeight:'bold' 
+  },
+ 
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa', // Light background color
+    backgroundColor: '#f8f9fa',
   },
   card: {
     width: '90%',
     padding: 20,
     backgroundColor: 'white',
     borderRadius: 10,
-    elevation: 3, // Shadow effect on Android
-    shadowColor: '#000', // Shadow effect on iOS
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
@@ -152,6 +208,37 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
+  captchaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  footerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  forgetText: {
+    color: '#4682B4', // Dark sky blue color for links
+    textAlign: 'center',
+    marginVertical: 10,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  
+  footerText: {
+    fontSize: 16,
+    color: '#333',
+    marginRight: 5, // Space between text and sign-up link
+  },
+  
+  signUpLink: {
+    textDecorationLine: 'underline',
+    color: '#4682B4', // Blue color for Sign up
+    fontSize: 16,
+  },  
   input: {
     height: 50,
     borderColor: '#ccc',
@@ -161,32 +248,43 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fff',
   },
-  captchaContainer: {
+  passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    borderColor: '#cccccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingLeft: 10,
+  },
+  eyeIcon: {
+    marginLeft: 10,
+  },
+  captchaContainer: {
+    marginBottom: 15,
+    alignItems: 'center',
   },
   refreshButton: {
-    backgroundColor: 'black',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
+    backgroundColor: '#00416a',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginLeft: 10,
   },
   refreshButtonText: {
     color: '#fff',
-    fontSize: 16,
   },
   captchaText: {
-    color: '#333',
-    fontSize: 14,
-    marginBottom: 10,
+    marginVertical: 10,
   },
   loginButton: {
-    backgroundColor: '#1D3D47',
+    backgroundColor: '#00416a',
     borderRadius: 10,
     paddingVertical: 15,
-    marginTop: 10,
     alignItems: 'center',
   },
   loginButtonText: {
@@ -194,25 +292,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  forgotPasswordText: {
-    color: '#007bff',
+  linkText: {
+    color: '#4682B4', // Dark sky blue color for links
+    marginTop: 10,
     textAlign: 'center',
-    marginTop: 15,
-    fontSize: 14,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  signupLink: {
-    fontSize: 16,
-    color: 'blue',
+    textDecorationLine: 'underline',
   },
 });
 
 export default LoginScreen;
+
+
+/*
+        <Text style={styles.or}>Or</Text>
+
+        <Button color='#00416a' title="Sign in with Google" onPress={() => promptAsync()} />
+        <Text>{userInfo ? `Logged in as ${userInfo.name}` : ""}</Text>*/

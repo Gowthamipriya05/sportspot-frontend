@@ -11,7 +11,7 @@ export type RootStackParamList = {
   ReturnItem: undefined; // No parameters
   MyProducts: undefined; // No parameters
 
-  VerifyOTPScreen: { email: string ,name:string,enroll_number:string,branch:string,password:string,mobile:string };
+  VerifyOTPScreen: { email: string ,name:string,enroll_number:string,branch:string,password:string,mobile:string,stream:string };
 };
 
 // Define the type for the LoginScreen's navigation prop
