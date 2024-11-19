@@ -267,7 +267,7 @@ export default function ReturnItem() {
   
       if (returnResponse.data.message === "Return date updated successfully") {
         // Step 2: Update item quantity
-        const quantityResponse = await axios.put(`${API_BASE_URL}/update-item-quantity/${item.it_name}`, {
+        const quantityResponse = await axios.put(`${API_BASE_URL}/update-item-quantity/${item._id}`, {
           quantity: item.it_quantity,
         });
         console.log('Quantity Response:', quantityResponse.data);
