@@ -24,10 +24,10 @@ const LoginScreen: React.FC = () => {
   const [userInfo, setUserInfo] = useState(null);
   const navigation = useNavigation();
 
-
+/*
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: "309486654714-lj45du3jpfpfb449endmatqmftjol5up.apps.googleusercontent.com",
-  });
+  });*/
 
   const generateMathProblem = () => {
     const num1 = Math.floor(Math.random() * 10);
@@ -45,7 +45,7 @@ const LoginScreen: React.FC = () => {
   useEffect(() => {
     refreshCaptcha();
   }, []);
-
+/*
   useEffect(() => {
     if (response?.type === "success") {
       handleGoogleSignIn(response.authentication.accessToken);
@@ -65,7 +65,7 @@ const LoginScreen: React.FC = () => {
     } catch (error) {
       Alert.alert("Error", "Failed to log in with Google.");
     }
-  };
+  };*/
 
   const handleLogin = async () => {
     console.log('api url', API_BASE_URL);
@@ -157,8 +157,7 @@ const LoginScreen: React.FC = () => {
 
         <Text style={styles.or}>Or</Text>
 
-        <Button color='#00416a' title="Sign in with Google" onPress={() => promptAsync()} />
-        <Text>{userInfo ? `Logged in as ${userInfo.name}` : ""}</Text>
+        <Button color='#00416a' title="Sign in with Google" />
 
         <TouchableOpacity onPress={() => navigation.navigate('ResetPasswordScreen', { email })}>
           <Text style={styles.forgetText}>Forgot Password?</Text>
