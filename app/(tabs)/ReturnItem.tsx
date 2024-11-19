@@ -220,27 +220,67 @@ export default function ReturnItem() {
     }
   };
 
+  // const handleReturn = async (item: IssuedItem) => {
+  //   try {
+  //     const returnDate = new Date().toISOString().split('T')[0];
+
+  //     const returnResponse = await axios.put(`${API_BASE_URL}/return-item/${item._id}`, {
+  //       return_date: returnDate,
+  //       it_status: false
+  //     });
+  //     console.log('Return Response:', returnResponse.data);
+
+  //     if (returnResponse.data.message === "Return date updated successfully") {
+  //       console.log('Attempting to update quantity for item name:', item.it_name, 'with quantity:', item.it_quantity);
+
+  //       const quantityResponse = await axios.put(`${API_BASE_URL}/update-item-quantity/${item.it_name}`, {
+  //         quantity: item.it_quantity
+  //       });
+  //       console.log('Quantity Response:', quantityResponse.data);
+
+  //       if (quantityResponse.data.message === "Item quantity updated successfully") {
+  //         fetchIssuedItems(studentEnrollNumber || '');
+
+  //         Alert.alert('Success', 'Item returned successfully!');
+  //       } else {
+  //         throw new Error(quantityResponse.data.message || "Error updating item quantity");
+  //       }
+  //     } else {
+  //       throw new Error(returnResponse.data.message || "Error updating return date");
+  //     }
+  //   } catch (error) {
+  //     Alert.alert('Error', 'Failed to return the item');
+  //     console.error('Return Item Error:', error.response ? error.response.data : error);
+  //   }
+  // };
+
   const handleReturn = async (item: IssuedItem) => {
     try {
       const returnDate = new Date().toISOString().split('T')[0];
-
+  
+      // Step 1: Update return date
       const returnResponse = await axios.put(`${API_BASE_URL}/return-item/${item._id}`, {
         return_date: returnDate,
-        it_status: false
+        it_status: false,
       });
       console.log('Return Response:', returnResponse.data);
-
+  
       if (returnResponse.data.message === "Return date updated successfully") {
-        console.log('Attempting to update quantity for item name:', item.it_name, 'with quantity:', item.it_quantity);
-
+        // Step 2: Update item quantity
         const quantityResponse = await axios.put(`${API_BASE_URL}/update-item-quantity/${item.it_name}`, {
-          quantity: item.it_quantity
+          quantity: item.it_quantity,
         });
         console.log('Quantity Response:', quantityResponse.data);
-
+  
         if (quantityResponse.data.message === "Item quantity updated successfully") {
-          fetchIssuedItems(studentEnrollNumber || '');
-
+          // Optimistic UI update
+          setItemsIssued((prevItems) =>
+            prevItems.map((i) =>
+              i._id === item._id
+                ? { ...i, it_status: false, return_date: returnDate }
+                : i
+            )
+          );
           Alert.alert('Success', 'Item returned successfully!');
         } else {
           throw new Error(quantityResponse.data.message || "Error updating item quantity");
@@ -253,6 +293,7 @@ export default function ReturnItem() {
       console.error('Return Item Error:', error.response ? error.response.data : error);
     }
   };
+  
 
   const renderItem = ({ item }: { item: IssuedItem }) => (
     <View style={styles.row}>
